@@ -1,4 +1,4 @@
-"""Merge a GRPO LoRA adapter into its base model for serving (run inside smol-train:local).
+"""Merge a GRPO LoRA adapter into its base model for serving (run inside smol-train:rocm).
 Loads the base exactly as TRL did (trl.trainer.utils.create_model_from_path -> the config's
 architecture class), attaches the adapter, checks every adapter tensor attached, merges, saves bf16.
     python scripts/merge_lora.py ADAPTER_DIR OUT_DIR"""

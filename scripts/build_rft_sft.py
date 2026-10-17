@@ -2,8 +2,8 @@
 (rejection-sampling fine-tuning). Keeps a completion only if BOTH checkers pass it, so the
 warm start never teaches "Label: 42"-style answers that only the lenient grader accepts.
 
-    # 1. teacher run (e.g. Qwen3.8-27B on Spark node 1), program mode, 2 samples per task:
-    .venv/bin/python eval_harness.py run --endpoint http://SPARK_HOST:8000/v1 --model Qwen/Qwen3.8-27B \
+    # 1. teacher run, program mode, 2 samples per task:
+    .venv/bin/python eval_harness.py run --endpoint http://127.0.0.1:8000/v1 --model Qwen/Qwen3.8-27B \
         --split train --limit 2000 --n-samples 2 --temperature 0.7 --mode program --no-think \
         --out runs/teacher-qwen38-27b-train
     # 2. filter:

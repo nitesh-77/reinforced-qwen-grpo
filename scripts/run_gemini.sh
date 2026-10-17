@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Gemini reference run on this Spark. Reads the API key from stdin (one line), so it never
+# Gemini reference run. Reads the API key from stdin (one line), so it never
 # lands in argv, the environment of other processes, or a file.
 #   printf '%s\n' "$GEMINI_API_KEY" | scripts/run_gemini.sh MODE OUT [extra eval_harness args...]
 set -euo pipefail

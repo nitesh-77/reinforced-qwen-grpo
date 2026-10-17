@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Drop clean page-cache pages for big read-only file trees (no root needed: posix_fadvise
-DONTNEED). GB10 GPU allocations can hang when the kernel must reclaim page cache first.
+"""Drop clean page-cache pages for big read-only file trees with posix_fadvise DONTNEED.
     cache_evict.py [--loop SECONDS]      logs to <repo>/logs/cache-evict.log"""
 import os, sys, time
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

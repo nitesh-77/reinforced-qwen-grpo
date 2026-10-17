@@ -20,7 +20,7 @@ are kept as context but listed in no_loss_msgs, so the student never learns a ma
 Split: 5% of tasks to val, seeded shuffle of task ids. Stats are measured with the student tokenizer and the same
 render_and_mask that train_sft_agent.py trains with (it also proves every turn is prefix-consistent).
 
-    # node 2, CPU only, inside smol-train:v2
+    # CPU only, inside smol-train:rocm
     python3 scripts/build_sft_27b.py
 """
 from __future__ import annotations

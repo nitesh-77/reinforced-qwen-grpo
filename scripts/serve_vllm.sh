@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
-# Serve one baseline model with the selected GPU backend for the eval harness (OpenAI API on :PORT).
+# Serve one baseline model on an AMD ROCm GPU for the eval harness (OpenAI API on :PORT).
 #   scripts/serve_vllm.sh MODEL [PORT] [GPU_MEM_UTIL] [EXTRA vllm args...]
 #   scripts/serve_vllm.sh Qwen/Qwen3.5-2B 8010 0.25
 # Stop: docker rm -f smol-eval
 set -euo pipefail
 MODEL=${1:?model id}; PORT=${2:-8010}; UTIL=${3:-0.25}; shift $(( $# < 3 ? $# : 3 ))
 source "$(dirname "${BASH_SOURCE[0]}")/gpu_runtime.sh"
-if [[ "$SMOL_GPU_BACKEND" == rocm ]]; then
-  : "${SMOL_VLLM_IMAGE:?Set SMOL_VLLM_IMAGE to a ROCm vLLM image for SMOL_GPU_BACKEND=rocm}"
-fi
-IMAGE=${SMOL_VLLM_IMAGE:-vllm/vllm-openai:v0.27.1-aarch64}
+IMAGE=${SMOL_VLLM_IMAGE:?Set SMOL_VLLM_IMAGE to a pinned ROCm vLLM image}
 docker rm -f smol-eval >/dev/null 2>&1 || true
 docker run -d --name smol-eval "${GPU_DOCKER_ARGS[@]}" --ipc host -p "${PORT}:8000" \
   -e HF_HUB_OFFLINE=1 -v "${HF_HOME_HOST:-$HOME/.cache/huggingface}:/root/.cache/huggingface" \

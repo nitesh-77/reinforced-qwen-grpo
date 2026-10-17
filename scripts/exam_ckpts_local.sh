@@ -6,6 +6,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 P=${P:-$(cd "$(dirname "$0")/.." && pwd)}
 RUN=${1:?run dir}; TAG=${2:?exam tag}; shift 2
+TRAIN_IMAGE=${TRAIN_IMAGE:-smol-train:rocm}
 log() { echo "[$(date -u +%FT%TZ)] $*"; }
 for s in "$@"; do
   EX=runs/T${s}-$TAG-agent
@@ -14,7 +15,7 @@ for s in "$@"; do
   log "STAGE exam checkpoint $s"
   if [ ! -f $RUN/checkpoint-$s/merged/model.safetensors ]; then
     docker run --rm --user $(id -u):$(id -g) -e HOME=/tmp -e HF_HOME=${HF_HOME_HOST:-$HOME/.cache/huggingface} -e HF_HUB_OFFLINE=1 \
-      -v $P:$P -v ${HF_HOME_HOST:-$HOME/.cache/huggingface}:${HF_HOME_HOST:-$HOME/.cache/huggingface} -w $P smol-train:v2 \
+      -v $P:$P -v ${HF_HOME_HOST:-$HOME/.cache/huggingface}:${HF_HOME_HOST:-$HOME/.cache/huggingface} -w $P "$TRAIN_IMAGE" \
       python3 scripts/merge_lora.py $RUN/checkpoint-$s $RUN/checkpoint-$s/merged > logs/merge-$TAG-ckpt$s.log 2>&1 \
       || { log "FAILED merge $s"; touch $EX/EXAM_FAILED; continue; }
   fi

@@ -1,15 +1,11 @@
 #!/usr/bin/env bash
-# Run train_grpo_local.py in the smol-train image with the selected GPU backend. Sandboxes still start on the HOST
-# (docker socket), with the host venv as their interpreter. A memory watchdog stops the run if
-# MemAvailable stays under 5 GB (GB10 hard-freezes instead of OOM-killing).
-#   [SCRIPT=train_grpo_agent.py] scripts/train_in_container.sh --profile spark_4b_lora --pilot
+# Run GRPO in the ROCm image. Sandboxes start on the host through the Docker socket and use the host venv.
+# A memory watchdog stops the run if MemAvailable stays under 5 GB.
+#   SCRIPT=train_grpo_agent.py scripts/train_in_container.sh --profile agent_4b_lora --pilot
 set -uo pipefail
 P=${P:-$(cd "$(dirname "$0")/.." && pwd)}
 source "$(dirname "${BASH_SOURCE[0]}")/gpu_runtime.sh" || exit 1
-if [[ "$SMOL_GPU_BACKEND" == rocm ]]; then
-  : "${TRAIN_IMAGE:?Set TRAIN_IMAGE to a ROCm training image for SMOL_GPU_BACKEND=rocm}"
-fi
-TRAIN_IMAGE=${TRAIN_IMAGE:-smol-train:v2}
+TRAIN_IMAGE=${TRAIN_IMAGE:-smol-train:rocm}
 docker rm -f smol-train >/dev/null 2>&1
 ( while sleep 5; do
     docker ps -q --filter name=^smol-train$ | grep -q . || { sleep 30; docker ps -q --filter name=^smol-train$ | grep -q . || exit 0; }

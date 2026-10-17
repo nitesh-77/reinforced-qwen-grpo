@@ -1,0 +1,6 @@
+smol-train:rocm  (ROCm training image built from a pinned vllm/vllm-openai-rocm digest; record the digest on the AMD host)
+vllm/vllm-openai-rocm  (ROCm vLLM base image; record its digest on the AMD host)
+smolenv-sandbox:local sha256:2857261f7593c724d60523c070bad411177aa5ff111bed70e42e9e8885a65a5c
+trl 1.14.0 peft 0.21.0 transformers 5.17.0 torch 2.12.0+git6bbd260 vllm 0.27.1 flash-linear-attention 0.5.2 (ROCm)
+FineEnvs commit 08a5622ff3164bb72cd57d6360c7edcce6247bf8, SmolDataEnvs revision b2bf35647e2381b1ab12c2ad7862cbbe4e8f857b
+base model Qwen/Qwen3.5-4B snapshot 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a

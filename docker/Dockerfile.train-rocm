@@ -1,0 +1,30 @@
+# Supply a pinned AMD ROCm vLLM image digest for the MI300X host.
+ARG ROCM_BASE_IMAGE
+FROM ${ROCM_BASE_IMAGE}
+RUN python3 -c "import torch; assert torch.version.hip, 'ROCM_BASE_IMAGE must contain ROCm PyTorch'" \
+ && python3 -m pip freeze | grep -iE "^(torch|transformers|vllm|accelerate|tokenizers|numpy|triton)==" > /tmp/rocm-base-constraints.txt \
+ && python3 -m pip install --no-cache-dir -c /tmp/rocm-base-constraints.txt \
+      "trl==1.14.0" "peft==0.21.0" "flash-linear-attention[rocm]==0.5.2" \
+      "datasets>=4.7" pandas pyarrow "math-verify==0.9.0" pyyaml scipy scikit-learn
+RUN python3 - <<'PY'
+import inspect
+import torch
+import trl, peft, vllm, transformers, fla
+from fla.ops.gated_delta_rule import chunk_gated_delta_rule
+from trl import GRPOConfig, GRPOTrainer
+assert torch.version.hip, 'ROCm PyTorch was replaced during installation'
+assert 'environment_factory' in inspect.signature(GRPOTrainer.__init__).parameters, 'TRL lacks the existing agent environment API'
+required = {
+    'use_vllm', 'vllm_mode', 'vllm_gpu_memory_utilization', 'model_init_kwargs',
+    'vllm_importance_sampling_mode', 'vllm_importance_sampling_clip_max',
+    'vllm_max_model_length', 'chat_template_kwargs', 'reward_weights',
+    'max_tool_calling_iterations', 'num_generations', 'max_completion_length',
+    'mask_truncated_completions', 'repetition_penalty', 'log_completions',
+}
+missing = required - set(inspect.signature(GRPOConfig.__init__).parameters)
+assert not missing, f'TRL lacks existing GRPO settings: {sorted(missing)}'
+for module in (torch, trl, peft, vllm, transformers, fla):
+    print(module.__name__, module.__version__)
+print('ROCm', torch.version.hip)
+PY
+ENTRYPOINT []

@@ -12,7 +12,7 @@ all 526 prefixes), this fetches only the files each task lists in `files`.
     .venv/bin/python scripts/stage_task_files.py --splits train --yes        # ~11 GB, for GRPO
     .venv/bin/python scripts/stage_task_files.py --splits train --max-mb 100 --yes   # skip >100 MB inputs
 
-On the DGX Spark, run it there (same script) or rsync data/task_files over ConnectX.
+Run this script on the machine that will use the staged task files, or copy `data/task_files/` there.
 """
 from __future__ import annotations
 

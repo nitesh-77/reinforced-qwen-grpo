@@ -1,0 +1,17 @@
+# Local agent / tooling config (not part of the project)
+.agents/
+.aws/
+.codex/
+.audit/
+
+# Large local run outputs (kept out of git; evidence lives elsewhere)
+amd-training-results/
+runs/
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
