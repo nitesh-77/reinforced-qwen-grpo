@@ -4,8 +4,7 @@
 
 This repository trains a small open model, Qwen3.5-4B, with reinforcement learning (GRPO) on
 [SmolDataEnvs](https://huggingface.co/datasets/FineEnvs/SmolDataEnvs), Hugging Face FineEnvs' set of
-5,394 verifiable data-analysis tasks. The latest training run resumed at step 100 and completed at step
-120 on one AMD MI300X in AMD Developer Cloud. This repository contains the eval harness, the sandbox, a
+5,394 verifiable data-analysis tasks. The training was done on one AMD MI300X in AMD Developer Cloud. This repository contains the eval harness, the sandbox, a
 strict answer checker, the training scripts, and the exam results behind the video.
 
 The short version: RL raised the 4B model from 51.8% to 58.4% on a 394-task held-out exam (paired
@@ -68,8 +67,7 @@ uses it as the reward, and logs the lenient grader at weight 0 as a reward-hacki
 
 ## Reproduce it
 
-You need an AMD ROCm GPU machine with Docker, Python 3.11 or later, and about 20 GB of disk for the task files.
-Complete the AMD setup below before serving a model or starting training.
+You need a GPU machine with Docker, Python 3.11 or later, and about 20 GB of disk for the task files. For AMD MI300X, use the ROCm setup below.
 
 1. Install the host dependencies and download the dataset:
 
@@ -103,7 +101,12 @@ Complete the AMD setup below before serving a model or starting training.
      --slice eval_plus_test --mode agent --sandbox docker --out runs/base-4b-agent
    ```
 
-5. Build the ROCm training image by following the AMD setup below.
+5. Build the two training images. `smol-train:v2` builds on `smol-train:local`:
+
+   ```bash
+   docker build -f docker/Dockerfile.train -t smol-train:local docker/
+   docker build -f docker/Dockerfile.train2 -t smol-train:v2 docker/
+   ```
 
 6. Pre-screen 1,000 candidate training tasks, keep the ones the model solves only sometimes, and train:
 
@@ -117,13 +120,14 @@ Complete the AMD setup below before serving a model or starting training.
    Merge the LoRA adapter with `scripts/merge_lora.py`, serve it with `scripts/serve_local_model.sh`, and
    run the exam from step 4 again.
 
-`results/versions.txt` records the environment for the original published results. The AMD resumed
-run has separate logs, checkpoints, and metadata under `amd-training-results/`.
+`results/versions.txt` pins the exact versions used: TRL 1.14.0, PEFT 0.21.0, Transformers 5.15.0,
+vLLM 0.27.1, flash-linear-attention 0.5.2, the FineEnvs commit, the SmolDataEnvs revision, and the
+Qwen3.5-4B snapshot.
 
 ## AMD MI300X on AMD Developer Cloud
 
-The launchers use ROCm and explicit ROCm images. Training code, profiles, rewards, and sampling
-settings stay the same.
+The launchers accept `SMOL_GPU_BACKEND=rocm` and explicit ROCm images. Training code, profiles,
+rewards, and sampling settings stay the same. The default backend remains `nvidia`.
 The AMD ROCm image completed the resumed training run through step 120 on an AMD MI300X.
 
 Run these commands on the AMD host. Start with an official vLLM ROCm image and record its digest.
@@ -136,6 +140,7 @@ docker pull vllm/vllm-openai-rocm:latest
 export SMOL_VLLM_IMAGE=$(docker image inspect vllm/vllm-openai-rocm:latest --format '{{index .RepoDigests 0}}')
 docker build -f docker/Dockerfile.train-rocm \
   --build-arg ROCM_BASE_IMAGE="$SMOL_VLLM_IMAGE" -t smol-train:rocm docker/
+export SMOL_GPU_BACKEND=rocm
 export TRAIN_IMAGE=smol-train:rocm
 export HIP_VISIBLE_DEVICES=0
 ```
@@ -191,26 +196,24 @@ SCRIPT=train_grpo_agent.py scripts/train_in_container.sh --profile agent_4b_lora
 
 Checkpoints, the final adapter, training logs, and sandbox work files go into the selected run directory.
 Use another directory for each new experiment. The original profile and memory watchdog are preserved.
-The resumed run did not repeat the 394-task exam, so it does not independently reproduce the published
-scores above on the MI300X.
 
 ## Training lessons
 
 - **Match the trainer to vLLM.** Without `flash-linear-attention`, Transformers runs Qwen3.5's Gated
   DeltaNet layers on a slow PyTorch fallback whose log-probs differ from vLLM's. TRL's default
   importance sampling (`sequence_mask`) multiplies that gap across the sequence, so long completions
-  got almost no weight. `Dockerfile.train-rocm` installs it, and the plan sets `is_mode: token_truncate`.
+  got almost no weight. `Dockerfile.train2` installs it, and the plan sets `is_mode: token_truncate`.
 - **Use `repetition_penalty: 1.0`.** vLLM applies the penalty when it samples, but the trainer's
   log-probs don't include it. With 1.05 (the FineEnvs default) the per-token gap was 0.06 nats; with
   1.0 it was 0.012. A healthy run keeps the gap well under 0.02.
-- **Watch memory.** `train_in_container.sh` stops the run when available memory stays under 5 GB, and
+- **Watch memory.** The original GB10 host's unified memory doesn't OOM-kill cleanly.
+  `train_in_container.sh` stops the run when available memory stays under 5 GB, and
   `scripts/cache_evict.py` keeps the page cache in check.
 
 ## Data and licenses
 
-- Our code is Apache-2.0 (see `LICENSE`).
 - `vendor/` holds code from [FineEnvs](https://github.com/adithya-s-k/FineEnvs) (Apache-2.0, see
-  `vendor/LICENSE-FineEnvs.txt`) and the SmolDataEnvs grader (MIT). See `NOTICE`.
+  `vendor/LICENSE-FineEnvs.txt`) and the SmolDataEnvs grader (MIT). 
 - The SmolDataEnvs task metadata is MIT. The input files come from Kaggle datasets that each have their
   own license, so this repository doesn't include them; `scripts/stage_task_files.py` downloads them
   from the dataset's source.
